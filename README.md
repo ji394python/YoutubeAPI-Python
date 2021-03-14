@@ -6,10 +6,10 @@
 <pre>
 └頻道列表 
   └該頻道影片列表 
-     │  所有影片列表.csv 
+     │  ChannelID_所有影片列表.csv 
      │  
-     └─影片留言 <
-	         videoId.csv 
+     └─影片留言 
+	      videoId_所有留言列表.csv 
 </pre>
 
 ### [輸入]
