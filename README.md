@@ -1,6 +1,6 @@
 # YoutubeAPI-Python
-# 說明
-<br>
+<hr>
+## 說明
 
 ### [輸出目錄結構]
 -頻道列表 <br>
