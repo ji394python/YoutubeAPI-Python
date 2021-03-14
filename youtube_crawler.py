@@ -35,7 +35,7 @@ if __name__ == '__main__':
     }
 
     # Authorization Key
-    AUTH_KEY = "AIzaSyBMr2Fyv59DzYjN-MppVQR-ZmFIYY8Avqs"
+    AUTH_KEY = "Your own key"
 
     ## Example 1： Get all video from specific channel
     ###############################################################
