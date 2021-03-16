@@ -21,9 +21,10 @@
 - 皆會存成pd.DataFrame
 - 預先處理了JSON、日期..etc
 
+<hr>
 ### 【呼叫範例】
-- requset_playlistItems：獲取指定頻道下所有影片資訊
-- request_videoComment：獲取指定影片下所有留言 (包含巢狀留言)
+- requset_playlistItems()：獲取指定頻道下所有影片資訊
+- request_videoComment()：獲取指定影片下所有留言 (包含巢狀留言)
 ```python
 import API as api
 video_df  = api.requset_playlistItems(channelID,AUTH_KEY)  
