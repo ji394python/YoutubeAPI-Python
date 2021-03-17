@@ -26,7 +26,6 @@ if __name__ == '__main__':
         '關鍵時刻': 'UUKQVSNdzGBJSXaUmS4TOWww',
         '新聞挖挖哇': 'UURYM7X1WTLZeFHf4uuqkYCQ',
         '少康戰情室': 'UULZBXiS9ZrIXgKBs_SMfGBQ',
-        
         '新聞深喉嚨': 'UUdp5pYDJCpl5WFk3jFEjWHw',
         '國民大會': 'UU1WBRpr2G-NQvm_-jv-i6gg',
         '年代向前看': 'UUBuHkb1AS_yRQ71meFNQ3VQ',
@@ -35,25 +34,15 @@ if __name__ == '__main__':
     }
 
     # Authorization Key
-    AUTH_KEY = "Your own key"
+    AUTH_KEY = "AIzaSyBN1qe4AYHHvGxRRpvtvoVxMf6yUUqd2dA"
 
     ## Example 1： Get all video from specific channel
-    ###############################################################
-    # video_df  = api.requset_playlistItems(channel_key,AUTH_KEY) #
-    ###############################################################
     video_df  = api.requset_playlistItems(channels_dict['鄭知道了'],AUTH_KEY)
 
     ## Example 2： Get all comment from specific video
-    #################################################################################
-    # comment_df = api.request_videoComment(AUTH_KEY,videoId,channelTitle)  #
-    #################################################################################
     comment_df = api.request_videoComment(AUTH_KEY,video_df['videoId'][0],'鄭知道了') 
 
-
     ## Example 3： Get all channel's video and all video comments at same time
-    #################################################################################
-    #                                                                               #
-    #################################################################################
     for k,v in channels_dict.items():
         video_df  = api.requset_playlistItems(v,AUTH_KEY)
         for row in trange(len(video_df)):

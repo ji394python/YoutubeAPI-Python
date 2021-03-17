@@ -1,29 +1,35 @@
 import pandas as pd
 import requests
+from requests_html import HTMLSession
 import json
 from tqdm import tqdm, trange
 import os 
-
+from bs4 import BeautifulSoup 
+import traceback
 
 # API
 playlistItemsAPI = "https://www.googleapis.com/youtube/v3/playlistItems"
 commentThreadsAPI = "https://www.googleapis.com/youtube/v3/commentThreads"
+videoAPI = "https://www.googleapis.com/youtube/v3/videos"
+
 
 ## Get youtube api to take all video basic information
 ## also dataframe save to csv 
 def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
-    res = []
+    res = [] 
     params = {
         'key': key, ##我的API KEY
         'part': 'snippet',
         'playlistId': channel_uploadId,
         'maxResults': 50, # max
     }
+    
     try:
         resp = requests.get(playlistItemsAPI, params)
         resp_json = json.loads(resp.text)
         totalResults = resp_json['pageInfo']['totalResults']
         res = get_channel_video_lists(resp_json)
+            
 
         if totalResults > 50 :
             nextPageToken = resp_json['nextPageToken']
@@ -42,7 +48,33 @@ def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
         video_df = pd.DataFrame(res)
         video_df['publishedAt'] = pd.to_datetime(video_df['publishedAt'])
         video_df['publishedAt'] = video_df['publishedAt'].dt.tz_localize(None) # remove timezone
+        
+        ## Get Video Statistic
+        viewCount,likeCount,dislikeCount,commentCount = [],[],[],[]
+        
+        for row in trange(len(video_df)//40):
+            string = ','.join(video_df['videoId'].values[40*row:40*(row+1)])
+            resp_statistic_json = request_videoStatistic(key,string)
+            for item in resp_statistic_json:
+                viewCount.append(item['statistics']['viewCount'])
+                likeCount.append(item['statistics']['likeCount'])
+                dislikeCount.append(item['statistics']['dislikeCount'])
+                commentCount.append(item['statistics']['commentCount'])
 
+        string = ','.join(video_df['videoId'].values[40*(len(video_df)//40):])
+        resp_statistic_json = request_videoStatistic(key,string)
+        for item in resp_statistic_json:
+            viewCount.append(item['statistics']['viewCount'])
+            likeCount.append(item['statistics']['likeCount'])
+            dislikeCount.append(item['statistics']['dislikeCount'])
+            commentCount.append(item['statistics']['commentCount'])
+        
+        video_df['viewCount'] = viewCount
+        video_df['likeCount'] = likeCount
+        video_df['dislikeCount'] = dislikeCount
+        video_df['commentCount'] = commentCount
+
+        ## Check Path
         if not os.path.exists('頻道列表'):
             os.mkdir('頻道列表')
             os.mkdir('頻道列表/%s' %video_df.channelTitle[0])
@@ -56,7 +88,7 @@ def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
 
         return video_df
     except:
-        print(params)
+        traceback.print_exc()
 
 #### Extract data from json file for channel video
 def get_channel_video_lists(resp_json:dict) -> list:
@@ -70,10 +102,21 @@ def get_channel_video_lists(resp_json:dict) -> list:
         data['publishedAt'] = item['snippet']['publishedAt']
         data['title'] = item['snippet']['title']
         data['description'] = item['snippet']['description']
+        
         res.append(data)
         
     return res
 
+
+def request_videoStatistic(key:str,video_ID:str) -> dict:
+    params_statistic = {
+            'key': key,
+            'part':'statistics',
+            'id':video_ID
+        }
+    resp_statistic = requests.get(videoAPI, params_statistic)
+    resp_statistic_json = json.loads(resp_statistic.text)
+    return resp_statistic_json['items']
 
 ## Get youtube api to take all comment for specific videoID
 ## also dataframe save to csv 
@@ -132,17 +175,18 @@ def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
 
         return comment_df
     except:
-        print(params)
+        traceback.print_exc()
 
 
 #### Extract data from json file for videoID all comment
 def get_video_comment_list(resp_json:dict) -> list:
-    cols = ['videoId','commenterId','parentId','authorDisplayName','textOriginal','likeCount','publishedAt','updatedAt','totalReplyCount']
+    cols = ['videoId','commentId','commenterChannelId','parentId','authorDisplayName','textOriginal','likeCount','publishedAt','updatedAt','totalReplyCount']
     res = []
     for item in resp_json['items']:
         data = {col:'' for col in cols}
         data['videoId'] = item['snippet']['videoId']
-        data['commenterId'] = item['snippet']['topLevelComment']['snippet']['authorChannelId']['value']
+        data['commentId'] = item['snippet']['topLevelComment']['id']
+        data['commenterChannelId'] = item['snippet']['topLevelComment']['snippet']['authorChannelId']['value']
         data['parentId'] = ''
         data['authorDisplayName'] = item['snippet']['topLevelComment']['snippet']['authorDisplayName']
         data['textOriginal'] = item['snippet']['topLevelComment']['snippet']['textOriginal']
@@ -156,7 +200,8 @@ def get_video_comment_list(resp_json:dict) -> list:
                 nest_data = {col:'' for col in cols}
                 nest_data['videoId'] = nest_item['snippet']['videoId']
                 nest_data['commenterId'] = nest_item['snippet']['authorChannelId']['value']
-                nest_data['parentId'] = data['commenterId']
+                nest_data['commenterChannelId'] = nest_item['snippet']['authorChannelId']['value']
+                nest_data['parentId'] = data['commentId']
                 nest_data['authorDisplayName'] = nest_item['snippet']['authorDisplayName']
                 nest_data['textOriginal'] = nest_item['snippet']['textOriginal']
                 nest_data['likeCount'] = nest_item['snippet']['likeCount']
