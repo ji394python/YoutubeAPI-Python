@@ -1,7 +1,7 @@
 # YoutubeAPI-Python
 <hr>
 
-### [輸出目錄結構]
+### 輸出目錄結構
 <pre>
 └頻道列表 
   └該頻道影片列表 
@@ -11,10 +11,11 @@
 	      videoId_所有留言列表.csv 
 </pre>
 
+<hr>
 
-### 【呼叫範例】
-- requset_playlistItems(channel_uploadID,AUTH_KEY)：獲取指定頻道下所有影片資訊
-- request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名稱')：獲取指定影片下所有留言 (包含巢狀留言)
+### 呼叫範例
+- `requset_playlistItems(channel_uploadID,AUTH_KEY)`：獲取指定頻道下所有影片資訊
+- `request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名稱')`：獲取指定影片下所有留言 (包含巢狀留言)
 
 ```python
 import API as api
@@ -22,13 +23,17 @@ video_df  = api.requset_playlistItems(channelID,AUTH_KEY)
 comment_df = api.request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名稱') 
 ```
 
-### [輸入參數介紹]
+<hr>
+
+### 輸入參數介紹
 - AUTH_Key：去Google申請API KEY後再放入
 - Channel_uploadID：注意！此非頻道的ID,而是播放清單的ID (建議取影片全部播放的playlistId,不然會有邏輯上的問題)
 - VideoID：找到指定影片ID後再放入 
 
-### [輸出欄位介紹]
-- requset_playlistItems()：輸出該頻道所有影片資訊 "頻道名稱_影片列表.csv" 
+<hr>
+
+### 輸出欄位介紹
+- `requset_playlistItems()`：輸出該頻道所有影片資訊 "頻道名稱_影片列表.csv" 
   - channelId：頻道ID
   - channelTitle：頻道名稱
   - titile：影片標題
@@ -40,7 +45,7 @@ comment_df = api.request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名
   - dislikeCount：不喜歡數
   - commentCount：留言總數
 
-- request_videoComment()：輸出指定影片所有留言內容 "videoID.csv"
+- `request_videoComment()`：輸出指定影片所有留言內容 "videoID.csv"
   - videoID：影片ID
   - commentID：留言ID
   - commenterChannelID：留言者頻道ID
