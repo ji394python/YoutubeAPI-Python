@@ -33,12 +33,11 @@ def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
 
         if totalResults > 50 :
             nextPageToken = resp_json['nextPageToken']
-            for page in trange(totalResults//50-1):
+            for page in trange(totalResults//50):
                 params['pageToken'] = nextPageToken
                 resp = requests.get(playlistItemsAPI, params)
                 resp_json = json.loads(resp.text)
                 res.extend(get_channel_video_lists(resp_json))
-
                 try:
                     nextPageToken = resp_json['nextPageToken']
                 except:
@@ -56,24 +55,25 @@ def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
             string = ','.join(video_df['videoId'].values[40*row:40*(row+1)])
             resp_statistic_json = request_videoStatistic(key,string)
             for item in resp_statistic_json:
-                viewCount.append(item['statistics']['viewCount'])
-                likeCount.append(item['statistics']['likeCount'])
-                dislikeCount.append(item['statistics']['dislikeCount'])
-                commentCount.append(item['statistics']['commentCount'])
+                viewCount.append(item['statistics'].get('viewCount',-1))
+                likeCount.append(item['statistics'].get('likeCount',-1))
+                dislikeCount.append(item['statistics'].get('dislikeCount',-1))
+                commentCount.append(item['statistics'].get('commentCount',-1))
 
         string = ','.join(video_df['videoId'].values[40*(len(video_df)//40):])
         resp_statistic_json = request_videoStatistic(key,string)
         for item in resp_statistic_json:
-            viewCount.append(item['statistics']['viewCount'])
-            likeCount.append(item['statistics']['likeCount'])
-            dislikeCount.append(item['statistics']['dislikeCount'])
-            commentCount.append(item['statistics']['commentCount'])
-        
+            viewCount.append(item['statistics'].get('viewCount',-1))
+            likeCount.append(item['statistics'].get('likeCount',-1))
+            dislikeCount.append(item['statistics'].get('dislikeCount',-1))
+            commentCount.append(item['statistics'].get('commentCount',-1))
+
         video_df['viewCount'] = viewCount
         video_df['likeCount'] = likeCount
         video_df['dislikeCount'] = dislikeCount
         video_df['commentCount'] = commentCount
 
+        video_df.sort_values('viewCount',ascending=False,inplace=True)
         ## Check Path
         if not os.path.exists('頻道列表'):
             os.mkdir('頻道列表')
@@ -88,6 +88,7 @@ def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
 
         return video_df
     except:
+        print(channel_uploadId,item)
         traceback.print_exc()
 
 #### Extract data from json file for channel video
@@ -131,31 +132,20 @@ def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
     try:
         resp = requests.get(commentThreadsAPI, params)
         resp_json = json.loads(resp.text)
-        totalResults = resp_json['pageInfo']['totalResults']
-        res = get_video_comment_list(resp_json)
-        if  resp_json.get('nextPageToken',-1) != -1:
-            nextPageToken = resp_json['nextPageToken']
-            for page in trange(totalResults//100-1):
-                params['pageToken'] = nextPageToken #到下一頁
-                resp = requests.get(commentThreadsAPI, params)
-                resp_json = json.loads(resp.text)
-                res.extend(get_channel_video_lists(resp_json))
 
-                try:
-                    nextPageToken = resp_json['nextPageToken']
-                except:
-                    # No next page
-                    break
-        elif totalResults == 0:
-            print("【無留言："+videoID+"】")
-            return ""
+        while resp_json.get('nextPageToken',-1) != -1:
+            params['pageToken'] = resp_json['nextPageToken'] #到下一頁
+            resp = requests.get(commentThreadsAPI, params)
+            resp_json = json.loads(resp.text)
+            res.extend(get_video_comment_list(resp_json))
+
 
         comment_df = pd.DataFrame(res)
         #print(comment_df,resp_json,params)
         comment_df['publishedAt']  = pd.to_datetime(comment_df['publishedAt'])
 
         comment_df['publishedAt']  = comment_df['publishedAt'].dt.tz_localize(None) # remove timezone
-
+        comment_df.sort_values('likeCount',ascending=False,inplace=True)
         if not os.path.exists('頻道列表'):
             os.mkdir('頻道列表')
             os.mkdir('頻道列表/%s' %channelTitle)
