@@ -18,7 +18,7 @@ videoAPI = "https://www.googleapis.com/youtube/v3/videos"
 def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
     res = [] 
     params = {
-        'key': key, ##我的API KEY
+        'key': key, ##你的API KEY
         'part': 'snippet',
         'playlistId': channel_uploadId,
         'maxResults': 50, # max
