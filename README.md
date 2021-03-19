@@ -15,7 +15,7 @@
 
 ### 呼叫範例
 - `requset_playlistItems(channel_uploadID,AUTH_KEY)`：獲取指定頻道下所有影片資訊
-- `request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名稱')`：獲取指定影片下所有留言 (包含巢狀留言)
+- `request_videoComment(AUTH_KEY,videoID,channelTitle)`：獲取指定影片下所有留言 (包含巢狀留言)
 
 ```python
 import API as api
