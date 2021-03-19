@@ -28,7 +28,7 @@ comment_df = api.request_videoComment(AUTH_KEY,videoID,channelTitle)
 ### 輸入參數介紹
 - AUTH_Key：去Google申請API KEY後再放入
 - Channel_uploadID：注意！此非頻道的ID,而是播放清單的ID 
-     -> <span style="color:#1589F0">(建議取影片全部播放的playlistId,仿間上用channelID取playlistID的作法會有少抓影片的邏輯問題) <>
+     -> <span style="color:#1589F0">(建議取影片全部播放的playlistId,仿間上用channelID取playlistID的作法會有少抓影片的邏輯問題) </span>
 - ![Image of Yaktocat](https://github.com/ji394python/YoutubeAPI-Python/blob/main/youtube.png)
 - VideoID：找到指定影片ID後再放入 
 
