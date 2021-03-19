@@ -5,7 +5,7 @@
 <pre>
 └頻道列表 
   └該頻道影片列表 
-     │  ChannelID_所有影片列表.csv 
+     │  ChannelTitle_所有影片列表.csv 
      │  
      └─影片留言 
 	      videoId_所有留言列表.csv 
@@ -51,7 +51,7 @@ comment_df = api.request_videoComment(AUTH_KEY,videoID,channelTitle)
   - videoID：影片ID
   - commentID：留言ID
   - commenterChannelID：留言者頻道ID
-  - parentID：父留言ID (針對留言中的流言所設計)
+  - parentID：父留言ID (針對留言中的留言所設計)
   - authorDisplayName：留言者名稱
   - textOriginal：留言內容
   - likeCount：留言喜歡數
