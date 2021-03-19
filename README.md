@@ -20,7 +20,7 @@
 ```python
 import API as api
 video_df  = api.requset_playlistItems(channelID,AUTH_KEY)  
-comment_df = api.request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名稱') 
+comment_df = api.request_videoComment(AUTH_KEY,videoID,channelTitle) 
 ```
 
 <hr>
