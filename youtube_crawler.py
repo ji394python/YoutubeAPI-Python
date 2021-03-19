@@ -29,7 +29,7 @@ if __name__ == '__main__':
     }
 
     # Authorization Key
-    AUTH_KEY = "AIzaSyBN1qe4AYHHvGxRRpvtvoVxMf6yUUqd2dA"
+    AUTH_KEY = "Your Key"
 
     # ## Example 1： Get all video from specific channel
     for i in channels_dict.keys():
