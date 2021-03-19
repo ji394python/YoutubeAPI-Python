@@ -27,13 +27,14 @@ comment_df = api.request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名
 
 ### 輸入參數介紹
 - AUTH_Key：去Google申請API KEY後再放入
-- Channel_uploadID：注意！此非頻道的ID,而是播放清單的ID (建議取影片全部播放的playlistId,不然會有邏輯上的問題)
+- Channel_uploadID：注意！此非頻道的ID,而是播放清單的ID (建議取影片全部播放的playlistId,仿間上用channelID取playlistID的作法會有少抓影片的邏輯問題)
+- ![Image of Yaktocat](https://github.com/ji394python/YoutubeAPI-Python/blob/main/youtube.png)
 - VideoID：找到指定影片ID後再放入 
 
 <hr>
 
 ### 輸出欄位介紹
-- `requset_playlistItems()`：輸出該頻道所有影片資訊 "頻道名稱_影片列表.csv" 
+- `requset_playlistItems()`：輸出該頻道所有影片資訊 "頻道名稱_影片列表.csv" ，以觀看數作為排序
   - channelId：頻道ID
   - channelTitle：頻道名稱
   - titile：影片標題
@@ -45,7 +46,7 @@ comment_df = api.request_videoComment(AUTH_KEY,videoID,'可自定義的頻道名
   - dislikeCount：不喜歡數
   - commentCount：留言總數
 
-- `request_videoComment()`：輸出指定影片所有留言內容 "videoID.csv"
+- `request_videoComment()`：輸出指定影片所有留言內容 "videoID.csv"，以喜愛數作為排序
   - videoID：影片ID
   - commentID：留言ID
   - commenterChannelID：留言者頻道ID
