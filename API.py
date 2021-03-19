@@ -1,10 +1,8 @@
 import pandas as pd
 import requests
-from requests_html import HTMLSession
 import json
 from tqdm import tqdm, trange
 import os 
-from bs4 import BeautifulSoup 
 import traceback
 
 # API
