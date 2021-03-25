@@ -26,10 +26,12 @@ program_list = ["新聞面對面_part"]
 for program in program_list:
     data = jj.read_videoID(program, words_antiCH)
     dataFilter = jj.select_date(data,'2020-01-11', '2019-03-29') #篩選日期
-    allissueword = jj.read_keyword_data("party","senti") #載入需要的詞庫
-    dataSegment = jj.jieba_cutwords(data, "partyword","sentiword") #載入需要的詞庫.txt
+    allissueword = jj.read_keyword_data("issue","party","senti") #載入需要的詞庫
+    dataSegment = jj.jieba_cutwords(data,"issueworld","partyword","sentiword") #載入需要的詞庫.txt
 
+    #計算詞頻的function [要被計算詞頻的dataframe,斷詞的欄位名稱,需要被計算的詞庫,都設100]
     Result = jj.seperate_run(dataSegment,'jieba_cut', allissueword, 100)
+
     #%% 轉出Excel檔
     df = pd.DataFrame(Result)
     df.reset_index(inplace = True, drop = True)
