@@ -1,0 +1,9 @@
+*.xlsx
+*.txt
+*.csv
+*.zip
+message
+關鍵字
+__pycache__
+*.pyc
+Youtube數據分析
