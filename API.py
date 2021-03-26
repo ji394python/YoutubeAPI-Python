@@ -10,7 +10,7 @@ playlistItemsAPI = "https://www.googleapis.com/youtube/v3/playlistItems"
 commentThreadsAPI = "https://www.googleapis.com/youtube/v3/commentThreads"
 videoAPI = "https://www.googleapis.com/youtube/v3/videos"
 
-
+{'key': 'AIzaSyBN1qe4AYHHvGxRRpvtvoVxMf6yUUqd2dA', 'part': 'snippet,replies', 'videoId': 'VdP2aZ56_Js', 'maxResults': 100}
 ## Get youtube api to take all video basic information
 ## also dataframe save to csv 
 def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
@@ -26,8 +26,8 @@ def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
         resp = requests.get(playlistItemsAPI, params)
         resp_json = json.loads(resp.text)
         totalResults = resp_json['pageInfo']['totalResults']
+
         res = get_channel_video_lists(resp_json)
-            
 
         if totalResults > 50 :
             nextPageToken = resp_json['nextPageToken']
@@ -86,7 +86,6 @@ def requset_playlistItems(channel_uploadId:str,key:str) -> pd.DataFrame:
 
         return video_df
     except:
-        print(channel_uploadId,item)
         traceback.print_exc()
 
 #### Extract data from json file for channel video
@@ -130,6 +129,7 @@ def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
     try:
         resp = requests.get(commentThreadsAPI, params)
         resp_json = json.loads(resp.text)
+        res.extend(get_video_comment_list(resp_json))
 
         while resp_json.get('nextPageToken',-1) != -1:
             params['pageToken'] = resp_json['nextPageToken'] #到下一頁
@@ -140,28 +140,31 @@ def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
 
         comment_df = pd.DataFrame(res)
         #print(comment_df,resp_json,params)
-        comment_df['publishedAt']  = pd.to_datetime(comment_df['publishedAt'])
-
-        comment_df['publishedAt']  = comment_df['publishedAt'].dt.tz_localize(None) # remove timezone
-        comment_df.sort_values('likeCount',ascending=False,inplace=True)
-        if not os.path.exists('頻道列表'):
-            os.mkdir('頻道列表')
-            os.mkdir('頻道列表/%s' %channelTitle)
-            os.mkdir('頻道列表/%s/影片留言' %channelTitle)
-            comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
+        if 'publishedAt' not in comment_df.columns:
+            print(f"=== {videoID}：沒有任何留言 ===")
         else:
-            if not os.path.exists('頻道列表/%s' %channelTitle):
+            comment_df['publishedAt']  = pd.to_datetime(comment_df['publishedAt'])
+
+            comment_df['publishedAt']  = comment_df['publishedAt'].dt.tz_localize(None) # remove timezone
+            comment_df.sort_values('likeCount',ascending=False,inplace=True)
+            if not os.path.exists('頻道列表'):
+                os.mkdir('頻道列表')
                 os.mkdir('頻道列表/%s' %channelTitle)
                 os.mkdir('頻道列表/%s/影片留言' %channelTitle)
                 comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
             else:
-                if not os.path.exists('頻道列表/%s/影片留言' %channelTitle):
+                if not os.path.exists('頻道列表/%s' %channelTitle):
+                    os.mkdir('頻道列表/%s' %channelTitle)
                     os.mkdir('頻道列表/%s/影片留言' %channelTitle)
                     comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
                 else:
-                    comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
+                    if not os.path.exists('頻道列表/%s/影片留言' %channelTitle):
+                        os.mkdir('頻道列表/%s/影片留言' %channelTitle)
+                        comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
+                    else:
+                        comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
 
-        return comment_df
+            return comment_df
     except:
         traceback.print_exc()
 
