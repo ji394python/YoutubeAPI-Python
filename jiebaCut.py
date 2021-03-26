@@ -6,13 +6,12 @@ import jieba
 
 #%% 讀取播放清單檔案 (讀取影片敘述文字)
 def read_videoname(program:str) -> pd.DataFrame:
-    files = os.listdir('message/' + program)
+    files = os.listdir('頻道列表/' + program)
     sch = pd.DataFrame()
     for file in files:
-        if '播放清單' in file:
+        if '影片列表' in file:
             print(file)
-            tt = pd.read_excel('message/' + program +'/'+ file,engine='openpyxl',encoding='big5')
-            print('進入')
+            tt = pd.read_csv('頻道列表/' + program +'/'+ file)
             sch = sch.append(tt)
     sch = sch.reset_index(drop = True)
     return sch
@@ -38,7 +37,7 @@ def find_video(sch:pd.DataFrame, keyword_list:list) -> pd.DataFrame:
 def read_videoID(program:str, keyword_list:list) -> pd.DataFrame:
     sch = read_videoname(program)
     schres = find_video(sch, keyword_list)
-    pathToFind = 'message/' + program
+    pathToFind = '頻道列表/' + program 
     files = os.listdir(pathToFind)
     videoId = list(schres['videoId'])
     commRelated = pd.DataFrame()
@@ -49,14 +48,15 @@ def read_videoID(program:str, keyword_list:list) -> pd.DataFrame:
             tempFiles = os.listdir(pathToFind + '/' + file)
             for tempFile in tempFiles:
                 for Id in videoId:
-                    if tempFile.find(Id) != -1:
+                    if tempFile.find(Id) != -1: #若該影片沒留言則不會被抓進來算
                         i+=1
                         print(tempFile + str(i))
-                        comm = pd.read_excel(pathToFind + '/' + file + '/' + tempFile,engine='openpyxl',encoding='big5')
+                        comm = pd.read_csv(pathToFind + '/' + file + '/' + tempFile)
                         commRelated = commRelated.append(comm)
     data = commRelated.drop_duplicates()
     data.reset_index(inplace = True, drop = True)
     return data
+
 # del commRelated, Id, tempFile, tempFiles, file, files, comm, i, pathToFind, videoId
 #%%===========================================================================================
 #讀入正負情緒詞檔案
@@ -64,7 +64,7 @@ def read_keyword_data(*args:str) -> dict:
     
     tmp = dict()
     for wordExcel in args:
-        df = pd.read_excel(wordExcel +'.xlsx',engine='openpyxl')
+        df = pd.read_excel('頻道列表/'+wordExcel +'.xlsx',engine='openpyxl')
         for col in df.columns:
             tmp[col] = np.array(df[col].dropna())
     return tmp
@@ -74,7 +74,7 @@ def read_keyword_data(*args:str) -> dict:
 #%% 斷詞，並新增[jieba_cut、year、month]三個欄位
 def jieba_cutwords(data:pd.DataFrame, *args:str) -> pd.DataFrame:
     for wordPackage in args:
-        jieba.load_userdict(wordPackage +'.txt')
+        jieba.load_userdict('頻道列表/'+wordPackage +'.txt')
     
     data2 = data.copy()
     cut = []
