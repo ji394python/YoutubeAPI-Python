@@ -7,7 +7,6 @@ import copy
 import pdb
 import sys
 import API as api  # own function
- 
 
 ##### Introduction #####
 # Output will have three folder and multiple csv file 
@@ -18,14 +17,13 @@ import API as api  # own function
 # --- 各影片留言        #
 ########################
 
-
 if __name__ == '__main__':
     # uploadId not channelId
     channels_dict = {
         '新聞面對面': 'UU8w76cjoqEArF-ns44l_ujA',
         '新聞龍捲風': 'UUMetIbaFeT7AzX1K_YOGEjA',
         '關鍵時刻': 'UUKQVSNdzGBJSXaUmS4TOWww',
-        '新聞挖挖哇': 'UURYM7X1WTLZeFHf4uuqkYCQ',
+        '新聞挖挖哇！': 'UURYM7X1WTLZeFHf4uuqkYCQ',
         '少康戰情室': 'UULZBXiS9ZrIXgKBs_SMfGBQ',
 
         '新聞深喉嚨': 'UUdp5pYDJCpl5WFk3jFEjWHw',
@@ -53,8 +51,11 @@ if __name__ == '__main__':
         video_df  = api.requset_playlistItems(v,AUTH_KEY)
         for row in trange(len(video_df)):
             row = video_df.iloc[row,:]
-            channelTitle = row['channelTitle']
             videoId = row['videoId']
-            comment_df = api.request_videoComment(AUTH_KEY,videoId,channelTitle) 
+            comment_df = api.request_videoComment(AUTH_KEY,videoId,k) 
 
-
+    ## 範例四：先爬完所有頻道的所有影片資訊，再逐一爬取各影片留言
+    ## Example 4：Get all channel's videos first,and the crawler commentThreads for each video
+    for k,v in channels_dict.items():
+        api.requset_playlistItems(k,v,AUTH_KEY)
+    for k in channels_dict.keys():
