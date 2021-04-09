@@ -34,7 +34,7 @@ if __name__ == '__main__':
     }
 
     # Authorization Key
-    AUTH_KEY = "AIzaSyBN1qe4AYHHvGxRRpvtvoVxMf6yUUqd2dA"
+    AUTH_KEY = ""
 
     # ### Example 1： Get all video from specific channel
     # ### 範例一：找尋指定頻道的所有影片
