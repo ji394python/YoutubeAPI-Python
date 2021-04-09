@@ -169,7 +169,7 @@ def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
         comment_df = pd.DataFrame(res)
         #print(comment_df,resp_json,params)
         if 'publishedAt' not in comment_df.columns:
-            print(f"=== {videoID}：沒有任何留言 ===")
+            log.processLog(f"=== {videoID}：沒有任何留言 ===")
         else:
             comment_df['publishedAt']  = pd.to_datetime(comment_df['publishedAt'])
 
@@ -233,50 +233,103 @@ def get_video_comment_list(resp_json:dict) -> list:
 
 
 
-def get_videoComment(key:str,df:pd.DataFrame,startDate:str,endDate:str,force:bool)-> pd.DataFrame:
+def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool)-> pd.DataFrame:
     log.processLog('========================================================')
     log.processLog('========================================================')
     log.processLog(f'開始執行get_videoComment()')
     log.processLog(f"Step1: 判斷前次是否有遇到流量限制的問題：{os.path.exists('log/stopRecord.log')}")
     log.processLog(f"Step2: 是否從前次停止的地方開始：force:{force}")
     if ((os.path.exists('log/stopRecord.log') == False) | force):
-        channelTitle = df['channelTitle'].values[0]
-        data = df[(df.puhlishedAt >= startDate) & (df.publishedAt <= endDate)]
-        log.processLog(f'[{channelTitle}] 影片總數: {len(data)}')
-        log.processLog(f'[{channelTitle}] 開始爬取影片留言')
-        try:
-            for index in trange(len(data)):
-                row = data.iloc[index,:]
-                videoId = row['videoId']
-                comment_df = request_videoComment(key,videoId,channelTitle)
-                log.processLog(f'[{channelTitle}] 第{index}支影片留言:{videoId} Done')
-            log.processLog('--------------------------------------------------------')
-            return comment_df
-        except:
-            log.processLog(f'[{channelTitle}]  執行 get_videoComment() 發生錯誤，請查看錯誤LOG檔')
+        for title in titleList:
+            df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
+            channelTitle = df['channelTitle'].values[0]
+            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= endDate)]
+            log.processLog(f'[{channelTitle}] 頻道影片總數: {len(df)}')
+            log.processLog(f'[{channelTitle}] 指定時間內影片總數: {len(data)}')
+            log.processLog(f'[{channelTitle}] 本次需爬影片數: {len(data)}')
+            log.processLog(f'[{channelTitle}] 開始爬取影片留言')
+            try:
+                for index in trange(len(data)):
+                    row = data.iloc[index,:]
+                    videoId = row['videoId']
+                    comment_df = request_videoComment(key,videoId,channelTitle)
+                    log.processLog(f'[{channelTitle}] 第{index}支影片留言:{videoId} Done')
+                log.processLog('--------------------------------------------------------')
+                return comment_df
+            except:
+                log.processLog(f'[{channelTitle}]  執行 get_videoComment() 發生錯誤，請查看錯誤LOG檔')
 
-            log.errorLog('====================================================')
-            log.errorLog(f'[{channelTitle}] 錯誤函式:get_videoComment()')
-            log.errorLog(f'【錯誤影片ID】{videoId}')
-            log.errorLog('【錯誤訊息】')
-            log.errorLog(traceback.print_exc())
-            log.errorLog('--------------------------------------------------------')
-            record_time = time.strftime("%Y%m%d %H:%M:%S")
-            with open('log/stopRecord.log','a+',encoding='utf-8') as f:
-                f.write('--------------------------------------------------------'+'\n')
-                f.write(f'{record_time}:流量限制已達，紀錄最後資訊'+"\n")
-                dd = {'頻道名稱':channelTitle, '影片ID':videoId
-                ,'查詢開始時間':startDate,'查詢截止時間':endDate}
-                f.write(f"{json.dumps(dd,ensure_ascii=False)}"+'\n')
-                f.close()
-            return comment_df
+                log.errorLog('====================================================')
+                log.errorLog(f'[{channelTitle}] 錯誤函式:get_videoComment()')
+                log.errorLog(f'【錯誤影片ID】{videoId}')
+                log.errorLog('【錯誤訊息】')
+                log.errorLog(traceback.print_exc())
+                log.errorLog('--------------------------------------------------------')
+                record_time = time.strftime("%Y%m%d %H:%M:%S")
+                with open('log/stopRecord.log','a+',encoding='utf-8') as f:
+                    f.write('--------------------------------------------------------'+'\n')
+                    f.write(f'{record_time}:流量限制已達，紀錄最後資訊'+"\n")
+                    dd = {'頻道名稱':channelTitle, '影片ID':videoId
+                    ,'查詢開始時間':startDate,'查詢截止時間':endDate}
+                    f.write(f"{json.dumps(dd,ensure_ascii=False)}"+'\n')
+                    f.close()
+                return comment_df
     else:
-        s = ''
-        with open('log/stopRecord.log','w',encoding='utf-8') as f:
-            for readline in f.readline().split:
-                s += readline
+        with open('log/stopRecord.log','r',encoding='utf-8') as f:
+            for readline in f.readlines():
+                if readline.find('頻道名稱') != -1:
+                    s = json.loads(readline)
+        log.processLog(f"Step3：取得前次進度儲存進度 {s}")
+        log.processLog(f"Step4：進入VideoID比對程序")
+        titleIndex = titleList.index(s['頻道名稱'])
+        for title in titleList[titleIndex:]:
+            df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
+            channelTitle = df['channelTitle'].values[0]
+            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= endDate)]
+            if data['videoId'].values.tolist().count(s['影片ID']) == 1:
+                videoIDStart = data['videoId'].values.tolist().index(s['影片ID']) 
+            else:
+                videoIDStart = 0
+            log.processLog(f'[{channelTitle}] 頻道影片總數: {len(df)}')
+            log.processLog(f'[{channelTitle}] 指定時間內影片總數: {len(data)}')
+            log.processLog(f'[{channelTitle}] 本次需爬影片數: {len(data)-videoIDStart}')
+            log.processLog(f'[{channelTitle}] 開始爬取影片留言')
+            # log.processLog(f'{data.columns}')
+            # log.processLog(f'{data.head(5)}')
+            try:
+                for index in trange(len(data)):
+                    if index < videoIDStart:
+                        continue
+                    row = data.iloc[index,:]
+                    videoId = row['videoId']
+                    comment_df = request_videoComment(key,videoId,channelTitle)
+                    log.processLog(f'[{channelTitle}] 第{index}支影片留言:{videoId} Done')
+                log.processLog('--------------------------------------------------------')
+                return comment_df
+            except:
+                log.processLog(f'[{channelTitle}]  執行 get_videoComment() 發生錯誤，請查看錯誤LOG檔')
 
-channelTitle = '新聞挖挖哇！'
-videoId = 'f243pokrijfewfsdf'
-startDate = '2019-01-01'
-endDate = '2020-01-01'
+                log.errorLog('====================================================')
+                log.errorLog(f'[{channelTitle}] 錯誤函式:get_videoComment()')
+                log.errorLog(f'【錯誤影片ID】{videoId}')
+                log.errorLog('【錯誤訊息】')
+                log.errorLog(traceback.print_exc())
+                log.errorLog('--------------------------------------------------------')
+                record_time = time.strftime("%Y%m%d %H:%M:%S")
+                with open('log/stopRecord.log','a+',encoding='utf-8') as f:
+                    f.write('--------------------------------------------------------'+'\n')
+                    f.write(f'{record_time}:流量限制已達，紀錄最後資訊'+"\n")
+                    dd = {'頻道名稱':channelTitle, '影片ID':videoId
+                    ,'查詢開始時間':startDate,'查詢截止時間':endDate}
+                    f.write(f"{json.dumps(dd,ensure_ascii=False)}"+'\n')
+                    f.close()
+                return comment_df
+            
+
+
+# import jiebaCut as jj 
+# df = pd.read_csv(r'頻道列表\關鍵時刻\關鍵時刻_影片列表.csv')
+# ddf = jj.select_date(df,'2020-12-31','2019-12-31').sort_values('publishedAt')
+# ddf.sort_values('publishedAt').to_csv('test2.csv')
+# set(ddf.publishedAt.apply(lambda x:str(x)[:4]))
+

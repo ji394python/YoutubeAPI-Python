@@ -47,15 +47,16 @@ if __name__ == '__main__':
 
     ## Example 3： Get all channel's video and all video comments at same time
     ## 範例三：利用channels_dict一次爬取所有頻道的每支影片以及每支影片的留言
-    for k,v in channels_dict.items():
-        video_df  = api.requset_playlistItems(v,AUTH_KEY)
-        for row in trange(len(video_df)):
-            row = video_df.iloc[row,:]
-            videoId = row['videoId']
-            comment_df = api.request_videoComment(AUTH_KEY,videoId,k) 
+    # for k,v in channels_dict.items():
+    #     video_df  = api.requset_playlistItems(v,AUTH_KEY)
+    #     for row in trange(len(video_df)):
+    #         row = video_df.iloc[row,:]
+    #         videoId = row['videoId']
+    #         comment_df = api.request_videoComment(AUTH_KEY,videoId,k) 
 
     ## 範例四：先爬完所有頻道的所有影片資訊，再逐一爬取各影片留言
     ## Example 4：Get all channel's videos first,and the crawler commentThreads for each video
     for k,v in channels_dict.items():
         api.requset_playlistItems(k,v,AUTH_KEY)
-    for k in channels_dict.keys():
+
+    api.get_videoComment(AUTH_KEY,list(channels_dict.keys()),'2018-01-01','2018-12-31',False)
