@@ -190,7 +190,7 @@ def get_video_comment_list(resp_json:dict) -> list:
             for nest_item in item['replies']['comments']:
                 nest_data = {col:'' for col in cols}
                 nest_data['videoId'] = nest_item['snippet']['videoId']
-                nest_data['commenterId'] = nest_item['snippet']['authorChannelId']['value']
+                nest_data['commentId'] = nest_item['snippet']['authorChannelId']['value']
                 nest_data['commenterChannelId'] = nest_item['snippet']['authorChannelId']['value']
                 nest_data['parentId'] = data['commentId']
                 nest_data['authorDisplayName'] = nest_item['snippet']['authorDisplayName']
