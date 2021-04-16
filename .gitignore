@@ -8,3 +8,5 @@ __pycache__
 *.pyc
 Youtube數據分析
 *.log
+參考開發.py
+argvtest.py

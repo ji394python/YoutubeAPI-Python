@@ -5,7 +5,6 @@ from tqdm import tqdm, trange
 import os 
 import traceback
 import sys 
-sys.path.append(r'C:\Users\chiaming\Documents\GitHub\Nomura\tool_package')
 import log_manager as log
 import time
 
@@ -206,7 +205,7 @@ def get_video_comment_list(resp_json:dict) -> list:
         data = {col:'' for col in cols}
         data['videoId'] = item['snippet']['videoId']
         data['commentId'] = item['snippet']['topLevelComment']['id']
-        data['commenterChannelId'] = item['snippet']['topLevelComment']['snippet']['authorChannelId']['value']
+        data['commenterChannelId'] = '' if item['snippet']['topLevelComment']['snippet'].get('authorChannelId',-1) == -1 else item['snippet']['topLevelComment']['snippet']['authorChannelId']['value'] 
         data['parentId'] = ''
         data['authorDisplayName'] = item['snippet']['topLevelComment']['snippet']['authorDisplayName']
         data['textOriginal'] = item['snippet']['topLevelComment']['snippet']['textOriginal']
@@ -219,7 +218,7 @@ def get_video_comment_list(resp_json:dict) -> list:
             for nest_item in item['replies']['comments']:
                 nest_data = {col:'' for col in cols}
                 nest_data['videoId'] = nest_item['snippet']['videoId']
-                nest_data['commenterId'] = nest_item['snippet']['authorChannelId']['value']
+                nest_data['commentId'] = nest_item['snippet']['authorChannelId']['value']
                 nest_data['commenterChannelId'] = nest_item['snippet']['authorChannelId']['value']
                 nest_data['parentId'] = data['commentId']
                 nest_data['authorDisplayName'] = nest_item['snippet']['authorDisplayName']
@@ -237,9 +236,12 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
     log.processLog('========================================================')
     log.processLog('========================================================')
     log.processLog(f'開始執行get_videoComment()')
+    dd = {'Auth_key':key,'查詢頻道':titleList,'查詢開始日期':startDate,'查詢終止日期':endDate,'強制重來':force}
+    log.processLog(f"本次查詢參數：{dd}")
     log.processLog(f"Step1: 判斷前次是否有遇到流量限制的問題：{os.path.exists('log/stopRecord.log')}")
-    log.processLog(f"Step2: 是否從前次停止的地方開始：force:{force}")
-    if ((os.path.exists('log/stopRecord.log') == False) | force):
+    log.processLog(f"Step2: 是否從前次停止的地方開始：{force}")
+    titleList = list(titleList)
+    if ((os.path.exists('log/stopRecord.log') == False) | (force)):
         for title in titleList:
             df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
             channelTitle = df['channelTitle'].values[0]
@@ -268,10 +270,11 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
                 record_time = time.strftime("%Y%m%d %H:%M:%S")
                 with open('log/stopRecord.log','a+',encoding='utf-8') as f:
                     f.write('--------------------------------------------------------'+'\n')
-                    f.write(f'{record_time}:流量限制已達，紀錄最後資訊'+"\n")
-                    dd = {'頻道名稱':channelTitle, '影片ID':videoId
+                    f.write(f'{record_time}:終止程序，紀錄最後資訊'+"\n")
+                    f.write(f'{record_time}:若要看為何中止請查看errorLog'+"\n")
+                    para = {'頻道名稱':channelTitle, '影片ID':videoId
                     ,'查詢開始時間':startDate,'查詢截止時間':endDate}
-                    f.write(f"{json.dumps(dd,ensure_ascii=False)}"+'\n')
+                    f.write(f"{json.dumps(para,ensure_ascii=False)}"+'\n')
                     f.close()
                 return comment_df
     else:
@@ -318,18 +321,12 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
                 record_time = time.strftime("%Y%m%d %H:%M:%S")
                 with open('log/stopRecord.log','a+',encoding='utf-8') as f:
                     f.write('--------------------------------------------------------'+'\n')
-                    f.write(f'{record_time}:流量限制已達，紀錄最後資訊'+"\n")
-                    dd = {'頻道名稱':channelTitle, '影片ID':videoId
+                    f.write(f'{record_time}:終止程序，紀錄最後資訊'+"\n")
+                    f.write(f'{record_time}:若要看為何中止請查看errorLog'+"\n")
+                    para = {'頻道名稱':channelTitle, '影片ID':videoId
                     ,'查詢開始時間':startDate,'查詢截止時間':endDate}
-                    f.write(f"{json.dumps(dd,ensure_ascii=False)}"+'\n')
+                    f.write(f"{json.dumps(para,ensure_ascii=False)}"+'\n')
                     f.close()
                 return comment_df
             
-
-
-# import jiebaCut as jj 
-# df = pd.read_csv(r'頻道列表\關鍵時刻\關鍵時刻_影片列表.csv')
-# ddf = jj.select_date(df,'2020-12-31','2019-12-31').sort_values('publishedAt')
-# ddf.sort_values('publishedAt').to_csv('test2.csv')
-# set(ddf.publishedAt.apply(lambda x:str(x)[:4]))
 
