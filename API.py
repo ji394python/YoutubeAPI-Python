@@ -289,7 +289,7 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
         for title in titleList[titleIndex:]:
             df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
             channelTitle = df['channelTitle'].values[0]
-            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= (datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10] )]
+            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= str(datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10] )]
             if data['videoId'].values.tolist().count(s['影片ID']) == 1:
                 videoIDStart = data['videoId'].values.tolist().index(s['影片ID']) 
             else:
