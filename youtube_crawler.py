@@ -34,7 +34,7 @@ if __name__ == '__main__':
     }
 
     # Authorization Key
-    AUTH_KEY = ""
+    AUTH_KEY = "AIzaSyDGqYdQtaeJdOUE67tv4oX5Bl7TbZy6P5Y"
 
 
     ## 範例一：先爬完所有頻道的所有影片資訊，再逐一爬取各影片留言
@@ -42,4 +42,4 @@ if __name__ == '__main__':
     for k,v in channels_dict.items():
         api.requset_playlistItems(k,v,AUTH_KEY)
 
-    api.get_videoComment(AUTH_KEY,['年代向錢看'],'2018-01-01','2018-12-31',False)
+    api.get_videoComment(AUTH_KEY,['新台灣加油'],'2019-07-03', '2019-07-05',False)

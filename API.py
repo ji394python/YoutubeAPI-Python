@@ -149,7 +149,7 @@ def request_videoStatistic(key:str,video_ID:str) -> dict:
 def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
     res = []
     params = {
-        'key': key, ##我的API KEY
+        'key': key, 
         'part': 'snippet,replies',
         'videoId': videoID,
         'maxResults': 100, # max
@@ -194,42 +194,46 @@ def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
 
             return comment_df
     except:
-        traceback.print_exc()
-        return comment_df
+        log.errorLog(f'[{channelTitle}] - {videoID} - 錯誤函式:request_videoComment()')
+        log.errorLog(traceback.print_exc())
 
 
 #### Extract data from json file for videoID all comment
 def get_video_comment_list(resp_json:dict) -> list:
-    cols = ['videoId','commentId','commenterChannelId','parentId','authorDisplayName','textOriginal','likeCount','publishedAt','updatedAt','totalReplyCount']
-    res = []
-    for item in resp_json['items']:
-        data = {col:'' for col in cols}
-        data['videoId'] = item['snippet']['videoId']
-        data['commentId'] = item['snippet']['topLevelComment']['id']
-        data['commenterChannelId'] = '' if item['snippet']['topLevelComment']['snippet'].get('authorChannelId',-1) == -1 else item['snippet']['topLevelComment']['snippet']['authorChannelId']['value'] 
-        data['parentId'] = ''
-        data['authorDisplayName'] = item['snippet']['topLevelComment']['snippet']['authorDisplayName']
-        data['textOriginal'] = item['snippet']['topLevelComment']['snippet']['textOriginal']
-        data['likeCount'] = item['snippet']['topLevelComment']['snippet']['likeCount']
-        data['publishedAt'] = item['snippet']['topLevelComment']['snippet']['publishedAt']
-        data['updatedAt'] = item['snippet']['topLevelComment']['snippet']['updatedAt']
-        data['totalReplyCount'] = item['snippet']['totalReplyCount']
-        res.append(data)
-        if data['totalReplyCount'] > 0:
-            for nest_item in item['replies']['comments']:
-                nest_data = {col:'' for col in cols}
-                nest_data['videoId'] = nest_item['snippet']['videoId']
-                nest_data['commentId'] = nest_item['snippet']['authorChannelId']['value']
-                nest_data['commenterChannelId'] = nest_item['snippet']['authorChannelId']['value']
-                nest_data['parentId'] = data['commentId']
-                nest_data['authorDisplayName'] = nest_item['snippet']['authorDisplayName']
-                nest_data['textOriginal'] = nest_item['snippet']['textOriginal']
-                nest_data['likeCount'] = nest_item['snippet']['likeCount']
-                nest_data['publishedAt'] = nest_item['snippet']['publishedAt']
-                nest_data['updatedAt'] = nest_item['snippet']['updatedAt']
-                nest_data['totalReplyCount'] = 0 #可以在改善的地方,或可以用Tag來做
-                res.append(nest_data)
-    return res
+    try:
+        cols = ['videoId','commentId','commenterChannelId','parentId','authorDisplayName','textOriginal','likeCount','publishedAt','updatedAt','totalReplyCount']
+        res = []
+        for item in resp_json['items']:
+            data = {col:'' for col in cols}
+            data['videoId'] = item['snippet']['videoId']
+            data['commentId'] = item['snippet']['topLevelComment']['id']
+            data['commenterChannelId'] = '' if item['snippet']['topLevelComment']['snippet'].get('authorChannelId',-1) == -1 else item['snippet']['topLevelComment']['snippet']['authorChannelId']['value'] 
+            data['parentId'] = ''
+            data['authorDisplayName'] = item['snippet']['topLevelComment']['snippet']['authorDisplayName']
+            data['textOriginal'] = item['snippet']['topLevelComment']['snippet']['textOriginal']
+            data['likeCount'] = item['snippet']['topLevelComment']['snippet']['likeCount']
+            data['publishedAt'] = item['snippet']['topLevelComment']['snippet']['publishedAt']
+            data['updatedAt'] = item['snippet']['topLevelComment']['snippet']['updatedAt']
+            data['totalReplyCount'] = item['snippet']['totalReplyCount']
+            res.append(data)
+            if item.get('replies',-99) != -99:
+                for nest_item in item['replies']['comments']:
+                    nest_data = {col:'' for col in cols}
+                    nest_data['videoId'] = nest_item['snippet']['videoId']
+                    nest_data['commentId'] = nest_item['snippet']['authorChannelId']['value']
+                    nest_data['commenterChannelId'] = nest_item['snippet']['authorChannelId']['value']
+                    nest_data['parentId'] = data['commentId']
+                    nest_data['authorDisplayName'] = nest_item['snippet']['authorDisplayName']
+                    nest_data['textOriginal'] = nest_item['snippet']['textOriginal']
+                    nest_data['likeCount'] = nest_item['snippet']['likeCount']
+                    nest_data['publishedAt'] = nest_item['snippet']['publishedAt']
+                    nest_data['updatedAt'] = nest_item['snippet']['updatedAt']
+                    nest_data['totalReplyCount'] = 0 #可以在改善的地方,或可以用Tag來做
+                    res.append(nest_data)
+        return res
+    except:
+        log.errorLog(f'錯誤函式:get_video_comment_list()')
+        log.errorLog(traceback.print_exc())
 
 
 
@@ -238,25 +242,25 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
     log.processLog('========================================================')
     log.processLog(f'開始執行get_videoComment()')
     dd = {'Auth_key':key,'查詢頻道':titleList,'查詢開始日期':startDate,'查詢終止日期':endDate,'強制重來':force}
-    log.processLog(f"本次查詢參數：{dd}")
-    log.processLog(f"Step1: 判斷前次是否有遇到流量限制的問題：{os.path.exists('log/stopRecord.log')}")
-    log.processLog(f"Step2: 是否從前次停止的地方開始：{force}")
+    log.processLog(f"  本次查詢參數：{dd}")
+    log.processLog(f"  Step1: 判斷前次是否有遇到流量限制的問題：{os.path.exists('log/stopRecord.log')}")
+    log.processLog(f"  Step2: 是否從前次停止的地方開始：{force}")
     titleList = list(titleList)
     if ((os.path.exists('log/stopRecord.log') == False) | (force)):
         for title in titleList:
             df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
             channelTitle = df['channelTitle'].values[0]
-            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= endDate)]
-            log.processLog(f'[{channelTitle}] 頻道影片總數: {len(df)}')
-            log.processLog(f'[{channelTitle}] 指定時間內影片總數: {len(data)}')
-            log.processLog(f'[{channelTitle}] 本次需爬影片數: {len(data)}')
-            log.processLog(f'[{channelTitle}] 開始爬取影片留言')
+            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= str(datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10])]
+            log.processLog(f'  [{channelTitle}] 頻道影片總數: {len(df)}')
+            log.processLog(f'  [{channelTitle}] 指定時間內影片總數: {len(data)}')
+            log.processLog(f'  [{channelTitle}] 本次需爬影片數: {len(data)}')
+            log.processLog(f'  [{channelTitle}] 開始爬取影片留言')
             try:
                 for index in trange(len(data)):
                     row = data.iloc[index,:]
                     videoId = row['videoId']
                     comment_df = request_videoComment(key,videoId,channelTitle)
-                    log.processLog(f'[{channelTitle}] 第{index}支影片留言:{videoId} Done')
+                    log.processLog(f'  [{channelTitle}] 第{index}支影片留言:{videoId} Done')
                 log.processLog('--------------------------------------------------------')
                 return comment_df
             except:
