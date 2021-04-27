@@ -78,7 +78,7 @@ def read_keyword_data(*args:str) -> dict:
 # allsentiword = change_df_to_dict(senti)
 # del senti
 #%% 斷詞，並新增[jieba_cut、year、month]三個欄位
-def jieba_cutwords(data:pd.DataFrame,language=False, *args:str) -> pd.DataFrame:
+def jieba_cutwords(data:pd.DataFrame, *args:str,**kwargs) -> pd.DataFrame:
     for wordPackage in args:
         jieba.load_userdict('頻道列表/'+wordPackage +'.txt')
     
@@ -89,10 +89,11 @@ def jieba_cutwords(data:pd.DataFrame,language=False, *args:str) -> pd.DataFrame:
         cut.append(list(jieba.cut(str(text))))
     data2['jieba_cut'] = cut
     year_month_cut(data2)
-    if language == True:
-        data2['traditional'] = [ 1 if check.hasTraditional(s) else 0 for s in data2['textOriginal']]
-        data2['simplified'] = [ 1 if check.hasSimplified(s) else 0 for s in data2['textOriginal']]
-        data2['english'] = [ 1 if check.hasEnglish(s) else 0 for s in data2['textOriginal']]
+    if (kwargs.get('language',-1)!= -1):
+        if kwargs['language'] == True:
+            data2['traditional'] = [ 1 if check.hasTraditional(s) else 0 for s in data2['textOriginal']]
+            data2['simplified'] = [ 1 if check.hasSimplified(s) else 0 for s in data2['textOriginal']]
+            data2['english'] = [ 1 if check.hasEnglish(s) else 0 for s in data2['textOriginal']]
     data2.reset_index(inplace = True, drop = True)
     return data2
 
