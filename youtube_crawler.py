@@ -34,8 +34,8 @@ if __name__ == '__main__':
     }
 
     # Authorization Key
-    AUTH_KEY = "AIzaSyDGqYdQtaeJdOUE67tv4oX5Bl7TbZy6P5Y"
-
+    with open('config.txt','r') as f:
+        API = [ row.strip() for row in f.readlines()]
 
     ## 範例一：先爬完所有頻道的所有影片資訊，再逐一爬取各影片留言
     ## Example 1：Get all channel's videos first,and the crawler commentThreads for each video
