@@ -4,8 +4,6 @@ import time
 def errorLog(exe_status:str):
     '''Recording instance log'''
     log_path= 'log'
-    if os.path.exists('log/ERROR.log'):
-        os.remove('log/ERROR.log')
     if not os.path.exists(log_path):
         os.mkdir(log_path)   
         log_file = open(f'log/ERROR.log',mode='a',encoding='utf-8')
