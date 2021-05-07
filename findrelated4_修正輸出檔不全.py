@@ -4,13 +4,27 @@ Created on Mon Nov 30 12:55:09 2020
 
 @author: user
 """
+'''
+******************************注意!!!******************************************
+第一次執行請到console下載中研院斷詞系統ckip的python package
+語法如下：
 
+pip install -U ckiptagger[tf,gdown]
+
+備註：
+1. 中研院斷詞系統會用到機器學習模組tensorflow
+2. 中研院斷詞系統因為使用深度學習模型，所以執行速度較jieba慢上不少
+******************************************************************************
+'''
 import pandas as pd
 import numpy as np
 # import matplotlib.pyplot as plt
 import os
 import jieba
-import jiebaCut as jj
+import JiebaTermFreq as jj
+import messageSummary as summary
+from ckiptagger import WS
+import CkipTermFreq as ckip
 
 #%% 製作計數表
 words_antiCH = ['送中', '香港', '黑警', '香港警察', '暴徒', '中共', '香港民運', 
@@ -23,9 +37,18 @@ words_antiCH = ['送中', '香港', '黑警', '香港警察', '暴徒', '中共'
 #program_list = ["年代向錢看", "新台灣加油", "鄭知道了"]
 program_list = ["新聞面對面"]
 
+#彙整單一頻道所有留言至一個excel檔
 for program in program_list:
-    data = jj.read_videoID(program,words_antiCH) #讀取該頻道下所有符合篩選字的video
-    dataFilter = jj.select_date(data,'2020-01-11', '2019-03-29') #篩選日期
+    Result = summary.read_all(program)
+    df_all = pd.DataFrame(Result)
+    df_all.to_csv("[頻道彙總]" + program + ".csv", encoding='utf-8-sig')
+
+    #%% 結束語法
+    
+#<jieba版>以關鍵字篩選頻道留言至一個excel，再進行jieba斷詞分析    
+for program in program_list:
+    data = jj.read_videoID(program, words_antiCH) #讀取該頻道下所有符合篩選字的video
+    dataFilter = jj.select_date(data, '2019-03-29', '2020-01-11') #篩選日期
     allissueword = jj.read_keyword_data("issue","party","senti") #載入需要的詞庫
     dataSegment = jj.jieba_cutwords(data,"issueword","partyword","sentiword",language=True) #載入需要的詞庫.txt
 
@@ -38,3 +61,18 @@ for program in program_list:
     df.to_csv("[斷詞結果]"+program+".csv",encoding='utf-8-sig')
     #%% 結束語法
 
+#<ckip版>以關鍵字篩選頻道留言至一個excel，再以中研院ckip進行斷詞分析
+ws = WS(".\data")
+for program in program_list:
+    data = ckip.read_videoID(program, words_antiCH) #讀取該頻道下所有符合篩選字的video  
+    dataFilter = ckip.select_date(data,'2019-03-29', '2020-01-11') #篩選日期
+    allissueword = ckip.read_keyword_data("issue","party","senti") #載入需要的詞庫
+    dataSegment = ckip.ckipnlp_cutwords(dataFilter, ws, "issueword", "partyword", "sentiword",language=True) #載入需要的詞庫.txt
+    
+    #計算詞頻的function [要被計算詞頻的dataframe,斷詞的欄位名稱,需要被計算的詞庫,都設100]
+    Result = ckip.seperate_run(dataSegment, 'ckipnlp_cut', allissueword, 100)
+
+    #%% 轉出Excel檔
+    df2 = pd.DataFrame(Result)
+    df2.reset_index(inplace = True, drop = True)
+    df2.to_csv("[ckip斷詞結果]"+program+".csv",encoding='utf-8-sig')
