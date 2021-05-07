@@ -14,7 +14,6 @@ playlistItemsAPI = "https://www.googleapis.com/youtube/v3/playlistItems"
 commentThreadsAPI = "https://www.googleapis.com/youtube/v3/commentThreads"
 videoAPI = "https://www.googleapis.com/youtube/v3/videos"
 
-
 ## Get youtube api to take all video basic information
 ## also dataframe save to csv 
 def requset_playlistItems(chaneel_name:str,channel_uploadId:str,key:str) -> pd.DataFrame:
@@ -90,32 +89,20 @@ def requset_playlistItems(chaneel_name:str,channel_uploadId:str,key:str) -> pd.D
         video_df['likeCount'] = likeCount
         video_df['dislikeCount'] = dislikeCount
         video_df['commentCount'] = commentCount
-
-        ## Check Path
-        if not os.path.exists('頻道列表'):
-            os.mkdir('頻道列表')
-            os.mkdir('頻道列表/%s' %video_df.channelTitle[0])
-            video_df.to_csv('頻道列表/%s/%s_影片列表.csv' % (video_df.channelTitle[0],video_df.channelTitle[0]) ,index=False,encoding='utf-8-sig')
-        else:
-            if not os.path.exists('頻道列表/%s' %video_df.channelTitle[0]):
-                os.mkdir('頻道列表/%s' %video_df.channelTitle[0])
-                video_df.to_csv('頻道列表/%s/%s_影片列表.csv' % (video_df.channelTitle[0],video_df.channelTitle[0]) ,index=False,encoding='utf-8-sig')
-            else:
-                video_df.to_csv('頻道列表/%s/%s_影片列表.csv' % (video_df.channelTitle[0],video_df.channelTitle[0]) ,index=False,encoding='utf-8-sig')
+        video_df.to_csv('頻道列表/%s/%s_影片列表.csv' % (video_df.channelTitle[0],video_df.channelTitle[0]) ,index=False,encoding='utf-8-sig')
         log.processLog('--------------------------------------------------------')
         return video_df
     except:
         log.processLog(f'[{chaneel_name}]  執行 requset_playlistItems() 發生錯誤，請查看錯誤LOG檔')
-
         log.errorLog('====================================================')
         log.errorLog(f'[{chaneel_name}] 錯誤函式:requset_playlistItems()')
         log.errorLog('【錯誤參數】')
         log.errorLog(log.processLog(json.dumps(params,indent=4)))
         log.errorLog('【錯誤訊息】')
-        log.errorLog(traceback.print_exc())
+        log.errorLog(traceback.format_exc())
         log.errorLog('----------------------------------------------------')
-        return video_df
-    
+        traceback.print_exc()
+
 #### Extract data from json file for channel video
 def get_channel_video_lists(resp_json:dict) -> list:
     cols = ['channelId','channelTitle','title','publishedAt','description','videoId']
@@ -132,7 +119,6 @@ def get_channel_video_lists(resp_json:dict) -> list:
         res.append(data)
         
     return res
-
 
 def request_videoStatistic(key:str,video_ID:str) -> dict:
     params_statistic = {
@@ -154,88 +140,59 @@ def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
         'videoId': videoID,
         'maxResults': 100, # max
     }
-    try:
+    resp = requests.get(commentThreadsAPI, params)
+    resp_json = json.loads(resp.text)
+    res.extend(get_video_comment_list(resp_json))
+
+    while resp_json.get('nextPageToken',-1) != -1:
+        params['pageToken'] = resp_json['nextPageToken'] #到下一頁
         resp = requests.get(commentThreadsAPI, params)
         resp_json = json.loads(resp.text)
         res.extend(get_video_comment_list(resp_json))
 
-        while resp_json.get('nextPageToken',-1) != -1:
-            params['pageToken'] = resp_json['nextPageToken'] #到下一頁
-            resp = requests.get(commentThreadsAPI, params)
-            resp_json = json.loads(resp.text)
-            res.extend(get_video_comment_list(resp_json))
-
-
-        comment_df = pd.DataFrame(res)
-        #print(comment_df,resp_json,params)
-        if 'publishedAt' not in comment_df.columns:
-            log.processLog(f"=== {videoID}：沒有任何留言 ===")
-        else:
-            comment_df['publishedAt']  = pd.to_datetime(comment_df['publishedAt'])
-
-            comment_df['publishedAt']  = comment_df['publishedAt'].dt.tz_localize(None) # remove timezone
-            comment_df.sort_values('likeCount',ascending=False,inplace=True)
-            if not os.path.exists('頻道列表'):
-                os.mkdir('頻道列表')
-                os.mkdir('頻道列表/%s' %channelTitle)
-                os.mkdir('頻道列表/%s/影片留言' %channelTitle)
-                comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
-            else:
-                if not os.path.exists('頻道列表/%s' %channelTitle):
-                    os.mkdir('頻道列表/%s' %channelTitle)
-                    os.mkdir('頻道列表/%s/影片留言' %channelTitle)
-                    comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
-                else:
-                    if not os.path.exists('頻道列表/%s/影片留言' %channelTitle):
-                        os.mkdir('頻道列表/%s/影片留言' %channelTitle)
-                        comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
-                    else:
-                        comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
-
-            return comment_df
-    except:
-        log.errorLog(f'[{channelTitle}] - {videoID} - 錯誤函式:request_videoComment()')
-        log.errorLog(traceback.print_exc())
-
+    comment_df = pd.DataFrame(res)
+    #print(comment_df,resp_json,params)
+    if 'publishedAt' not in comment_df.columns:
+        log.processLog(f"=== {videoID}：沒有任何留言 ===")
+    else:
+        comment_df['publishedAt']  = pd.to_datetime(comment_df['publishedAt'])
+        comment_df['publishedAt']  = comment_df['publishedAt'].dt.tz_localize(None) # remove timezone
+        comment_df.sort_values('likeCount',ascending=False,inplace=True)
+        comment_df.to_csv('頻道列表/%s/影片留言/%s.csv' % (channelTitle,videoID) ,index=False,encoding='utf-8-sig')
+        return comment_df
 
 #### Extract data from json file for videoID all comment
 def get_video_comment_list(resp_json:dict) -> list:
-    try:
-        cols = ['videoId','commentId','commenterChannelId','parentId','authorDisplayName','textOriginal','likeCount','publishedAt','updatedAt','totalReplyCount']
-        res = []
-        for item in resp_json['items']:
-            data = {col:'' for col in cols}
-            data['videoId'] = item['snippet']['videoId']
-            data['commentId'] = item['snippet']['topLevelComment']['id']
-            data['commenterChannelId'] = '' if item['snippet']['topLevelComment']['snippet'].get('authorChannelId',-1) == -1 else item['snippet']['topLevelComment']['snippet']['authorChannelId']['value'] 
-            data['parentId'] = ''
-            data['authorDisplayName'] = item['snippet']['topLevelComment']['snippet']['authorDisplayName']
-            data['textOriginal'] = item['snippet']['topLevelComment']['snippet']['textOriginal']
-            data['likeCount'] = item['snippet']['topLevelComment']['snippet']['likeCount']
-            data['publishedAt'] = item['snippet']['topLevelComment']['snippet']['publishedAt']
-            data['updatedAt'] = item['snippet']['topLevelComment']['snippet']['updatedAt']
-            data['totalReplyCount'] = item['snippet']['totalReplyCount']
-            res.append(data)
-            if item.get('replies',-99) != -99:
-                for nest_item in item['replies']['comments']:
-                    nest_data = {col:'' for col in cols}
-                    nest_data['videoId'] = nest_item['snippet']['videoId']
-                    nest_data['commentId'] = nest_item['snippet']['authorChannelId']['value']
-                    nest_data['commenterChannelId'] = nest_item['snippet']['authorChannelId']['value']
-                    nest_data['parentId'] = data['commentId']
-                    nest_data['authorDisplayName'] = nest_item['snippet']['authorDisplayName']
-                    nest_data['textOriginal'] = nest_item['snippet']['textOriginal']
-                    nest_data['likeCount'] = nest_item['snippet']['likeCount']
-                    nest_data['publishedAt'] = nest_item['snippet']['publishedAt']
-                    nest_data['updatedAt'] = nest_item['snippet']['updatedAt']
-                    nest_data['totalReplyCount'] = 0 #可以在改善的地方,或可以用Tag來做
-                    res.append(nest_data)
-        return res
-    except:
-        log.errorLog(f'錯誤函式:get_video_comment_list()')
-        log.errorLog(traceback.print_exc())
-
-
+    cols = ['videoId','commentId','commenterChannelId','parentId','authorDisplayName','textOriginal','likeCount','publishedAt','updatedAt','totalReplyCount']
+    res = []
+    for item in resp_json['items']:
+        data = {col:'' for col in cols}
+        data['videoId'] = item['snippet']['videoId']
+        data['commentId'] = item['snippet']['topLevelComment']['id']
+        data['commenterChannelId'] = '' if item['snippet']['topLevelComment']['snippet'].get('authorChannelId',-1) == -1 else item['snippet']['topLevelComment']['snippet']['authorChannelId']['value'] 
+        data['parentId'] = ''
+        data['authorDisplayName'] = item['snippet']['topLevelComment']['snippet']['authorDisplayName']
+        data['textOriginal'] = item['snippet']['topLevelComment']['snippet']['textOriginal']
+        data['likeCount'] = item['snippet']['topLevelComment']['snippet']['likeCount']
+        data['publishedAt'] = item['snippet']['topLevelComment']['snippet']['publishedAt']
+        data['updatedAt'] = item['snippet']['topLevelComment']['snippet']['updatedAt']
+        data['totalReplyCount'] = item['snippet']['totalReplyCount']
+        res.append(data)
+        if item.get('replies',-99) != -99:
+            for nest_item in item['replies']['comments']:
+                nest_data = {col:'' for col in cols}
+                nest_data['videoId'] = nest_item['snippet']['videoId']
+                nest_data['commentId'] = nest_item['snippet']['authorChannelId']['value']
+                nest_data['commenterChannelId'] = nest_item['snippet']['authorChannelId']['value']
+                nest_data['parentId'] = data['commentId']
+                nest_data['authorDisplayName'] = nest_item['snippet']['authorDisplayName']
+                nest_data['textOriginal'] = nest_item['snippet']['textOriginal']
+                nest_data['likeCount'] = nest_item['snippet']['likeCount']
+                nest_data['publishedAt'] = nest_item['snippet']['publishedAt']
+                nest_data['updatedAt'] = nest_item['snippet']['updatedAt']
+                nest_data['totalReplyCount'] = 0 #可以在改善的地方,或可以用Tag來做
+                res.append(nest_data)
+    return res
 
 def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool)-> pd.DataFrame:
     log.processLog('========================================================')
@@ -246,92 +203,87 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
     log.processLog(f"  Step1: 判斷前次是否有遇到流量限制的問題：{os.path.exists('log/stopRecord.log')}")
     log.processLog(f"  Step2: 是否從前次停止的地方開始：{force}")
     titleList = list(titleList)
-    if ((os.path.exists('log/stopRecord.log') == False) | (force)):
-        for title in titleList:
-            df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
-            channelTitle = df['channelTitle'].values[0]
-            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= str(datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10])]
-            log.processLog(f'  [{channelTitle}] 頻道影片總數: {len(df)}')
-            log.processLog(f'  [{channelTitle}] 指定時間內影片總數: {len(data)}')
-            log.processLog(f'  [{channelTitle}] 本次需爬影片數: {len(data)}')
-            log.processLog(f'  [{channelTitle}] 開始爬取影片留言')
-            try:
+    try:
+        if ((os.path.exists('log/stopRecord.log')) & (force==False)):
+            with open('log/stopRecord.log','r',encoding='utf-8') as f:
+                for readline in f.readlines():
+                    if readline.find('頻道名稱') != -1:
+                        s = json.loads(readline)
+            log.processLog(f"Step3：取得前次進度儲存進度 {s}")
+            log.processLog(f"Step4：進入VideoID比對程序")
+            titleIndex = titleList.index(s['頻道名稱'])
+            for title in titleList[titleIndex:]:
+                df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
+                channelTitle = df['channelTitle'].values[0]
+                data = df[(df.publishedAt >= startDate) & (df.publishedAt <= str(datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10] )]
+                if data['videoId'].values.tolist().count(s['影片ID']) == 1:
+                    videoIDStart = data['videoId'].values.tolist().index(s['影片ID']) 
+                else:
+                    videoIDStart = 0
+                log.processLog(f'[{channelTitle}] 頻道影片總數: {len(df)}')
+                log.processLog(f'[{channelTitle}] 指定時間內影片總數: {len(data)}')
+                log.processLog(f'[{channelTitle}] 本次需爬影片數: {len(data)-videoIDStart-1}')
+                log.processLog(f'[{channelTitle}] 開始爬取影片留言')
+                # log.processLog(f'{data.columns}')
+                # log.processLog(f'{data.head(5)}')
                 for index in trange(len(data)):
-                    row = data.iloc[index,:]
-                    videoId = row['videoId']
-                    comment_df = request_videoComment(key,videoId,channelTitle)
-                    log.processLog(f'  [{channelTitle}] 第{index}支影片留言:{videoId} Done')
-                log.processLog('--------------------------------------------------------')
-                return comment_df
-            except:
-                log.processLog(f'[{channelTitle}]  執行 get_videoComment() 發生錯誤，請查看錯誤LOG檔')
-
-                log.errorLog('====================================================')
-                log.errorLog(f'[{channelTitle}] 錯誤函式:get_videoComment()')
-                log.errorLog(f'【錯誤影片ID】{videoId}')
-                log.errorLog('【錯誤訊息】')
-                log.errorLog(traceback.print_exc())
-                log.errorLog('--------------------------------------------------------')
-                record_time = time.strftime("%Y%m%d %H:%M:%S")
-                with open('log/stopRecord.log','a+',encoding='utf-8') as f:
-                    f.write('--------------------------------------------------------'+'\n')
-                    f.write(f'{record_time}:終止程序，紀錄最後資訊'+"\n")
-                    f.write(f'{record_time}:若要看為何中止請查看errorLog'+"\n")
-                    para = {'頻道名稱':channelTitle, '影片ID':videoId
-                    ,'查詢開始時間':startDate,'查詢截止時間':endDate}
-                    f.write(f"{json.dumps(para,ensure_ascii=False)}"+'\n')
-                    f.close()
-                return comment_df
-    else:
-        with open('log/stopRecord.log','r',encoding='utf-8') as f:
-            for readline in f.readlines():
-                if readline.find('頻道名稱') != -1:
-                    s = json.loads(readline)
-        log.processLog(f"Step3：取得前次進度儲存進度 {s}")
-        log.processLog(f"Step4：進入VideoID比對程序")
-        titleIndex = titleList.index(s['頻道名稱'])
-        for title in titleList[titleIndex:]:
-            df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
-            channelTitle = df['channelTitle'].values[0]
-            data = df[(df.publishedAt >= startDate) & (df.publishedAt <= str(datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10] )]
-            if data['videoId'].values.tolist().count(s['影片ID']) == 1:
-                videoIDStart = data['videoId'].values.tolist().index(s['影片ID']) 
-            else:
-                videoIDStart = 0
-            log.processLog(f'[{channelTitle}] 頻道影片總數: {len(df)}')
-            log.processLog(f'[{channelTitle}] 指定時間內影片總數: {len(data)}')
-            log.processLog(f'[{channelTitle}] 本次需爬影片數: {len(data)-videoIDStart}')
-            log.processLog(f'[{channelTitle}] 開始爬取影片留言')
-            # log.processLog(f'{data.columns}')
-            # log.processLog(f'{data.head(5)}')
-            try:
-                for index in trange(len(data)):
-                    if index < videoIDStart:
+                    if index < (videoIDStart+1):
                         continue
                     row = data.iloc[index,:]
                     videoId = row['videoId']
                     comment_df = request_videoComment(key,videoId,channelTitle)
                     log.processLog(f'[{channelTitle}] 第{index}支影片留言:{videoId} Done')
                 log.processLog('--------------------------------------------------------')
-                return comment_df
-            except:
-                log.processLog(f'[{channelTitle}]  執行 get_videoComment() 發生錯誤，請查看錯誤LOG檔')
+                return comment_df 
+        else:    
+            for title in titleList:
+                df = pd.read_csv('頻道列表/'+title+'/'+title+'_影片列表.csv')
+                channelTitle = df['channelTitle'].values[0]
+                data = df[(df.publishedAt >= startDate) & (df.publishedAt <= str(datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10])]
+                log.processLog(f'  [{channelTitle}] 頻道影片總數: {len(df)}')
+                log.processLog(f'  [{channelTitle}] 指定時間內影片總數: {len(data)}')
+                log.processLog(f'  [{channelTitle}] 本次需爬影片數: {len(data)}')
+                log.processLog(f'  [{channelTitle}] 開始爬取影片留言')
+                for index in trange(len(data)):
+                    row = data.iloc[index,:]
+                    videoId = row['videoId']
+                    comment_df = request_videoComment(key,videoId,channelTitle)
+                    log.processLog(f'  [{channelTitle}] 第{index}支影片留言:{videoId} Done')
+                log.processLog('--------------------------------------------------------')
+                return comment_df       
+    except:
+        log.processLog(f'[{channelTitle}]  執行 get_videoComment() 發生錯誤，請查看錯誤LOG檔')
 
-                log.errorLog('====================================================')
-                log.errorLog(f'[{channelTitle}] 錯誤函式:get_videoComment()')
-                log.errorLog(f'【錯誤影片ID】{videoId}')
-                log.errorLog('【錯誤訊息】')
-                log.errorLog(traceback.print_exc())
-                log.errorLog('--------------------------------------------------------')
-                record_time = time.strftime("%Y%m%d %H:%M:%S")
-                with open('log/stopRecord.log','a+',encoding='utf-8') as f:
-                    f.write('--------------------------------------------------------'+'\n')
-                    f.write(f'{record_time}:終止程序，紀錄最後資訊'+"\n")
-                    f.write(f'{record_time}:若要看為何中止請查看errorLog'+"\n")
-                    para = {'頻道名稱':channelTitle, '影片ID':videoId
-                    ,'查詢開始時間':startDate,'查詢截止時間':endDate}
-                    f.write(f"{json.dumps(para,ensure_ascii=False)}"+'\n')
-                    f.close()
-                return comment_df
+        log.errorLog('====================================================')
+        log.errorLog(f'[{channelTitle}] 錯誤函式:get_videoComment()')
+        log.errorLog(f'【錯誤影片ID】{videoId}')
+        log.errorLog('【錯誤訊息】')
+        log.errorLog(traceback.format_exc())
+        log.errorLog('--------------------------------------------------------')
+        stopRecord(channelTitle,videoId,startDate,endDate)
+        traceback.print_exc()
             
+def stopRecord(channelTitle,videoId,startDate,endDate):
+    with open('log/stopRecord.log','w+',encoding='utf-8') as f:
+        record_time = time.strftime("%Y%m%d %H:%M:%S")
+        f.write('--------------------------------------------------------'+'\n')
+        f.write(f'{record_time}:終止程序，紀錄最後資訊'+"\n")
+        f.write(f'{record_time}:若要看為何中止請查看errorLog'+"\n")
+        para = {'頻道名稱':channelTitle, '影片ID':videoId
+        ,'查詢開始時間':startDate,'查詢截止時間':endDate}
+        f.write(f"{json.dumps(para,ensure_ascii=False)}"+'\n')
+        f.close()
 
+def pathControl(channelTitle):
+    for title in channelTitle:
+        if not os.path.exists('頻道列表'):
+            os.mkdir('頻道列表')
+            os.mkdir('頻道列表/%s' %title)
+            os.mkdir('頻道列表/%s/影片留言' %title)
+        else:
+            if not os.path.exists('頻道列表/%s' %title):
+                os.mkdir('頻道列表/%s' %title)
+                os.mkdir('頻道列表/%s/影片留言' %title)
+            else:
+                if not os.path.exists('頻道列表/%s/影片留言' %title):
+                    os.mkdir('頻道列表/%s/影片留言' %title)
