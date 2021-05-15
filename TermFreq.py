@@ -5,11 +5,8 @@ import os
 import jieba
 from datetime import datetime,timedelta
 import checkword as check
-<<<<<<< HEAD:TermFreq.py
 from ckiptagger import construct_dictionary
-=======
-from datetime import datetime,timedelta
->>>>>>> 31b9af00cc670635ce73740b679a034ed9d4c4f4:CkipTermFreq.py
+
 
 #%% 讀取播放清單檔案 (讀取影片敘述文字)
 def read_videoname(program:str) -> pd.DataFrame:
