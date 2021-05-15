@@ -21,9 +21,8 @@ import numpy as np
 # import matplotlib.pyplot as plt
 import os
 import jieba
-import JiebaTermFreq as jj
 from ckiptagger import WS
-import CkipTermFreq as ckip
+import TermFreq as cut
 
 #%% 製作計數表
 words_antiCH = ['送中', '香港', '黑警', '香港警察', '暴徒', '中共', '香港民運', 
@@ -38,13 +37,13 @@ program_list = ["新聞面對面"]
     
 #<jieba版>以關鍵字篩選頻道留言至一個excel，再進行jieba斷詞分析    
 for program in program_list:
-    data = jj.read_videoID(program, words_antiCH) #讀取該頻道下所有符合篩選字的video
-    dataFilter = jj.select_date(data, '2019-03-29', '2020-01-11') #篩選日期
-    allissueword = jj.read_keyword_data("issue","party","senti") #載入需要的詞庫
-    dataSegment = jj.jieba_cutwords(data,"issueword","partyword","sentiword",language=True) #載入需要的詞庫.txt
+    data = cut.read_videoID(program, words_antiCH) #讀取該頻道下所有符合篩選字的video
+    dataFilter = cut.select_date(data, '2019-03-29', '2020-01-11') #篩選日期
+    allissueword = cut.read_keyword_data("issue","party","senti") #載入需要的詞庫
+    dataSegment = cut.jieba_cutwords(data,"issueword","partyword","sentiword",language=True) #載入需要的詞庫.txt
 
     #計算詞頻的function [要被計算詞頻的dataframe,斷詞的欄位名稱,需要被計算的詞庫,都設100]
-    Result = jj.seperate_run(dataSegment,'jieba_cut', allissueword, 100)
+    Result = cut.seperate_run(dataSegment,'jieba_cut', allissueword, 100)
 
     #%% 轉出Excel檔
     df = pd.DataFrame(Result)
@@ -55,13 +54,13 @@ for program in program_list:
 #<ckip版>以關鍵字篩選頻道留言至一個excel，再以中研院ckip進行斷詞分析
 ws = WS(".\data")
 for program in program_list:
-    data = ckip.read_videoID(program, words_antiCH) #讀取該頻道下所有符合篩選字的video  
-    dataFilter = ckip.select_date(data,'2019-03-29', '2020-01-11') #篩選日期
-    allissueword = ckip.read_keyword_data("issue","party","senti") #載入需要的詞庫
-    dataSegment = ckip.ckipnlp_cutwords(dataFilter, ws, "issueword", "partyword", "sentiword",language=True) #載入需要的詞庫.txt
+    data = cut.read_videoID(program, words_antiCH) #讀取該頻道下所有符合篩選字的video  
+    dataFilter = cut.select_date(data,'2019-03-29', '2020-01-11') #篩選日期
+    allissueword = cut.read_keyword_data("issue","party","senti") #載入需要的詞庫
+    dataSegment = cut.ckipnlp_cutwords(dataFilter, ws, "issueword", "partyword", "sentiword",language=True) #載入需要的詞庫.txt
     
     #計算詞頻的function [要被計算詞頻的dataframe,斷詞的欄位名稱,需要被計算的詞庫,都設100]
-    Result = ckip.seperate_run(dataSegment, 'ckipnlp_cut', allissueword, 100)
+    Result = cut.seperate_run(dataSegment, 'ckipnlp_cut', allissueword, 100)
 
     #%% 轉出Excel檔
     df2 = pd.DataFrame(Result)
