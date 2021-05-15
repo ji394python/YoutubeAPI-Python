@@ -9,6 +9,7 @@ import numpy as np
 import os
 from ckiptagger import construct_dictionary
 import checkword as check
+from datetime import datetime,timedelta
 
 #%% 讀取播放清單檔案 (讀取影片敘述文字)
 def read_videoname(program:str) -> pd.DataFrame:
