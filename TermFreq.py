@@ -1,14 +1,11 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 16 17:11:33 2021
-
-@author: User
-"""
 import pandas as pd
 import numpy as np
+# import matplotlib.pyplot as plt
 import os
-from ckiptagger import construct_dictionary
+import jieba
+from datetime import datetime,timedelta
 import checkword as check
+from ckiptagger import construct_dictionary
 
 #%% 讀取播放清單檔案 (讀取影片敘述文字)
 def read_videoname(program:str) -> pd.DataFrame:
@@ -17,7 +14,7 @@ def read_videoname(program:str) -> pd.DataFrame:
     for file in files:
         if '影片列表' in file:
             print(file)
-            tt = pd.read_csv('頻道列表/' + program +'/'+ file, engine = "python")
+            tt = pd.read_csv('頻道列表/' + program +'/'+ file)
             sch = sch.append(tt)
     sch = sch.reset_index(drop = True)
     return sch
@@ -81,7 +78,7 @@ def read_keyword_data(*args:str) -> dict:
 
 # allsentiword = change_df_to_dict(senti)
 # del senti
-#%%把詞庫轉成dictionary
+# #%%把詞庫轉成dictionary
 def txt_to_dict(wg:str):
     f = open(wg, "r", encoding="utf-8")
     wg_list = f.read().split()
@@ -89,6 +86,8 @@ def txt_to_dict(wg:str):
     for i in wg_list:
         wg_dict[i] = 1 #所有詞權重假設一樣為1
     return wg_dict
+
+# chip tagger 斷詞使用
 #%% 斷詞，並新增[ckipnlp_cut、year、month]三個欄位
 def ckipnlp_cutwords(data:pd.DataFrame, ws, *args:str, **kwargs) -> pd.DataFrame:
     wg_dict = {}
@@ -109,6 +108,27 @@ def ckipnlp_cutwords(data:pd.DataFrame, ws, *args:str, **kwargs) -> pd.DataFrame
         data2['traditional'] = [ 1 if check.hasTraditional(s) else 0 for s in data2['textOriginal']]
         data2['simplified'] = [ 1 if check.hasSimplified(s) else 0 for s in data2['textOriginal']]
         data2['english'] = [ 1 if check.hasEnglish(s) else 0 for s in data2['textOriginal']]
+    data2.reset_index(inplace = True, drop = True)
+    return data2
+
+# Jieba 斷詞使用
+#%% 斷詞，並新增[jieba_cut、year、month]三個欄位
+def jieba_cutwords(data:pd.DataFrame, *args:str,**kwargs) -> pd.DataFrame:
+    for wordPackage in args:
+        jieba.load_userdict('頻道列表/'+wordPackage +'.txt')
+    
+    data2 = data.copy()
+    cut = []
+    for text in data['textOriginal']:
+        # print(text)
+        cut.append(list(jieba.cut(str(text))))
+    data2['jieba_cut'] = cut
+    year_month_cut(data2)
+    if (kwargs.get('language',-1)!= -1):
+        if kwargs['language'] == True:
+            data2['traditional'] = [ 1 if check.hasTraditional(s) else 0 for s in data2['textOriginal']]
+            data2['simplified'] = [ 1 if check.hasSimplified(s) else 0 for s in data2['textOriginal']]
+            data2['english'] = [ 1 if check.hasEnglish(s) else 0 for s in data2['textOriginal']]
     data2.reset_index(inplace = True, drop = True)
     return data2
 
@@ -156,4 +176,3 @@ def select_date(Result:pd.DataFrame, date1:str, date2:str) -> pd.DataFrame:
     Result = Result.loc[Result['publishedAt'] < str(datetime.strptime(date2,'%Y-%m-%d')+timedelta(days=1))[:10], :]
     Result = Result.loc[Result['publishedAt'] > date1, :]
     return Result
-
