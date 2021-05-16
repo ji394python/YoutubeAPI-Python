@@ -31,6 +31,6 @@ if __name__ == '__main__':
     ## 範例一：先爬完所有頻道的所有影片資訊，再逐一爬取各影片留言
     ## Example 1：Get all channel's videos first,and the crawler commentThreads for each video
     for k,v in channels_dict.items():
-        api.requset_playlistItems(k,v,AUTH_KEY)
+        api.requset_playlistItems('年代向錢看','UUBuHkb1AS_yRQ71meFNQ3VQ',AUTH_KEY[0])
 
-    api.get_videoComment(AUTH_KEY,['關鍵時刻'],'2010-01-03', '2021-05-05',False)
+    api.get_videoComment(AUTH_KEY[0],channels_dict.keys(),'2010-01-03', '2021-05-05',False)
