@@ -25,6 +25,9 @@ from ckiptagger import WS
 import TermFreq as cut
 
 
+df = cut.read_videoname('新聞面對面')
+
+
 #%% 製作計數表
 words_antiCH = ['送中', '香港', '黑警', '香港警察', '暴徒', '中共', '香港民運', 
                 '反送中', '示威', '鎮壓', '一國兩制', '統一', '今日香港、明日台灣', 
@@ -39,8 +42,8 @@ program_list = ["新聞面對面"]
     
 #<jieba版>以關鍵字篩選頻道留言至一個excel，再進行jieba斷詞分析    
 for program in program_list:
-    data = cut.read_videoID(program, words_antiCH) #讀取該頻道下所有符合篩選字的video
-    dataFilter = cut.select_date(data, '2019-03-29', '2020-01-11') #篩選日期
+    data = cut.read_videoID(program,'2019-03-29','2021-01-11',words_antiCH) #讀取該頻道下所有符合篩選字的video
+    #dataFilter = cut.select_date(df, '2019-03-29', '2020-01-11') 篩選日期
     allissueword = cut.read_keyword_data("issue","party","senti") #載入需要的詞庫
     dataSegment = cut.jieba_cutwords(data,"issueword","partyword","sentiword",language=True) #載入需要的詞庫.txt
 
@@ -68,3 +71,24 @@ for program in program_list:
     df2 = pd.DataFrame(Result)
     df2.reset_index(inplace = True, drop = True)
     df2.to_csv("[ckip斷詞結果]"+program+".csv",encoding='utf-8-sig')
+
+
+
+
+#<TFIDF-jieba>函數使用方法
+#資料格式：tfidf(program:list,startDate:str,endDate:str) -> pd.DataFrame
+cut.tfidf(['少康戰情室'],'2020-01-01','2020-12-30') #計算少康戰情室2020年的tf-idf分數
+cut.tfidf(['少康戰情室','關鍵時刻'],'2020-01-01','2020-12-30') #計算少康戰情室、關鍵時刻2020年的tf-idf分數
+cut.tfidf(['少康戰情室','關鍵時刻','頭條開講'],'2020-01-01','2020-12-30') #計算少康戰情室、關鍵時刻、頭條開講2020年的tf-idf分數
+
+
+#<hashtag>函數使用方法
+#資料格式 hashtag(program:str,startDate:str,endDate:str)
+'''
+注意 -> hashtag一次只能用在一個頻道
+     -> tfidf則可以單個頻道、多個頻道一起計算
+'''
+
+cut.hashtag('關鍵時刻','2020-01-01','2020-12-30') #2020年關鍵時刻資料新增hashtag欄位
+cut.hashtag('少康戰情室','2020-01-01','2020-12-30') #2020年關鍵時刻資料新增hashtag欄位
+cut.hashtag('頭條開講','2020-01-01','2020-12-30') #2020年關鍵時刻資料新增hashtag欄位

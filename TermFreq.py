@@ -6,6 +6,8 @@ import jieba
 from datetime import datetime,timedelta
 import checkword as check
 from ckiptagger import construct_dictionary
+import re
+from jieba.analyse import extract_tags 
 
 
 #%% 讀取播放清單檔案 (讀取影片敘述文字)
@@ -38,13 +40,15 @@ def find_video(sch:pd.DataFrame, keyword_list:list) -> pd.DataFrame:
 # del word, words_antiCH, words_American, unn, titlecont, descont
 
 #%% 讀取schres之中的影片ID -> 並輸出該影片所有留言至同一dataframe
-def read_videoID(program:str, *args:list) -> pd.DataFrame:
+def read_videoID(program:str,startDate:str, endDate:str, *args:list) -> pd.DataFrame:
     sch = read_videoname(program)
+    sch = select_date(sch,startDate,endDate)
     if len(args) == 0:
         schres = sch
     else:
         keyword_list = [ ee for e in args for ee in e]
         schres = find_video(sch, keyword_list)
+        print(schres)
     pathToFind = '頻道列表/' + program 
     files = os.listdir(pathToFind)
     videoId = list(schres['videoId'])
@@ -173,7 +177,43 @@ def year_month_cut(data2:pd.DataFrame) -> pd.DataFrame:
     return data2
 
 #%% 篩選日期
-def select_date(Result:pd.DataFrame, date1:str, date2:str) -> pd.DataFrame:
-    Result = Result.loc[Result['publishedAt'] < str(datetime.strptime(date2,'%Y-%m-%d')+timedelta(days=1))[:10], :]
-    Result = Result.loc[Result['publishedAt'] > date1, :]
+def select_date(Result:pd.DataFrame, startDate:str, endDate:str) -> pd.DataFrame:
+    Result = Result.loc[Result['publishedAt'] < str(datetime.strptime(endDate,'%Y-%m-%d')+timedelta(days=1))[:10], :]
+    Result = Result.loc[Result['publishedAt'] > startDate, :]
     return Result
+
+
+def tfidf(program:list,startDate:str,endDate:str) -> pd.DataFrame:
+    res = pd.DataFrame()
+    for file in program:
+        data = read_videoname(file)
+        data = select_date(data,startDate,endDate)
+        res = pd.concat([res,data],ignore_index=True)
+    #TF-IDF
+    keywords = extract_tags(' '.join(res.title.str.replace('\n','').values.tolist()), topK=50, withWeight=True, allowPOS=())
+    df = pd.DataFrame({'詞':[item[0] for item in keywords] , '分數':[item[1] for item in keywords]})
+    return df
+
+
+def hashtag(program:str,startDate:str,endDate:str) -> pd.DataFrame:
+    data = read_videoname(program)
+    data = select_date(data,startDate,endDate)
+    column = data.description.apply(lambda x: str(x).replace('\n',' ').replace('#',' #').split(' '))
+    # titles = data.title.values.tolist()
+    # count = 0
+    res = []
+    for items in column:
+        res_temp = []
+        for item in items:
+            if '#' in item:
+                sub = re.findall('[\u4e00-\u9fa5a-zA-Z0-9#]+',item,re.S)
+                # print(sub[0])
+                res_temp.append(sub[0].lstrip())
+
+                # res_temp.append(item)
+        res.append(' '.join(res_temp))
+    data['hashtag'] = res
+        # count +=1
+    return data[['channelId', 'channelTitle', 'title', 'publishedAt', 'description','hashtag',
+       'videoId', 'viewCount', 'likeCount', 'dislikeCount', 'commentCount']]
+
