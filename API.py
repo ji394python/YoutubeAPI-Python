@@ -250,7 +250,6 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
                     comment_df = request_videoComment(key,videoId,channelTitle)
                     log.processLog(f'  [{channelTitle}] 第{index}支影片留言:{videoId} Done')
                 log.processLog('--------------------------------------------------------')
-                return comment_df       
     except:
         log.processLog(f'[{channelTitle}]  執行 get_videoComment() 發生錯誤，請查看錯誤LOG檔')
 
@@ -263,7 +262,7 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
         stopRecord(channelTitle,videoId,startDate,endDate)
         traceback.print_exc()
             
-def stopRecord(channelTitle,videoId,startDate,endDate):
+def stopRecord(channelTitle,videoId,startDate,endDate) -> None :
     with open('log/stopRecord.log','w+',encoding='utf-8') as f:
         record_time = time.strftime("%Y%m%d %H:%M:%S")
         f.write('--------------------------------------------------------'+'\n')
@@ -274,16 +273,3 @@ def stopRecord(channelTitle,videoId,startDate,endDate):
         f.write(f"{json.dumps(para,ensure_ascii=False)}"+'\n')
         f.close()
 
-def pathControl(channelTitle):
-    for title in channelTitle:
-        if not os.path.exists('頻道列表'):
-            os.mkdir('頻道列表')
-            os.mkdir('頻道列表/%s' %title)
-            os.mkdir('頻道列表/%s/影片留言' %title)
-        else:
-            if not os.path.exists('頻道列表/%s' %title):
-                os.mkdir('頻道列表/%s' %title)
-                os.mkdir('頻道列表/%s/影片留言' %title)
-            else:
-                if not os.path.exists('頻道列表/%s/影片留言' %title):
-                    os.mkdir('頻道列表/%s/影片留言' %title)
