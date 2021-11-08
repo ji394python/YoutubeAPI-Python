@@ -10,9 +10,9 @@ import time
 from datetime import datetime,timedelta
 
 # API
-playlistItemsAPI = "https://www.googleapis.com/youtube/v3/playlistItems"
-commentThreadsAPI = "https://www.googleapis.com/youtube/v3/commentThreads"
-videoAPI = "https://www.googleapis.com/youtube/v3/videos"
+playlistItemsAPI = "https://www.googleapis.com/youtube/v3/playlistItems" #播放清單API
+commentThreadsAPI = "https://www.googleapis.com/youtube/v3/commentThreads" #巢狀留言API
+videoAPI = "https://www.googleapis.com/youtube/v3/videos" #影片統計資訊API
 
 ## Get youtube api to take all video basic information
 ## also dataframe save to csv 
@@ -132,7 +132,14 @@ def request_videoStatistic(key:str,video_ID:str) -> dict:
 
 ## Get youtube api to take all comment for specific videoID
 ## also dataframe save to csv 
-def request_videoComment(key:str,videoID:str,channelTitle:str) -> pd.DataFrame:
+def request_videoComment(key:str,videoID:str,channelTitle:str,pathCheck=False) -> pd.DataFrame:
+    try:
+        if not pathCheck: 
+            os.makedirs(f'頻道列表/{channelTitle}/影片留言')
+    except FileExistsError:
+        pass
+    except:
+        traceback.print_exc()
     res = []
     params = {
         'key': key, 
@@ -231,7 +238,7 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
                         continue
                     row = data.iloc[index,:]
                     videoId = row['videoId']
-                    comment_df = request_videoComment(key,videoId,channelTitle)
+                    comment_df = request_videoComment(key,videoId,channelTitle,True)
                     log.processLog(f'[{channelTitle}] 第{index}支影片留言:{videoId} Done')
                 log.processLog('--------------------------------------------------------')
                 return comment_df 
@@ -247,7 +254,7 @@ def get_videoComment(key:str,titleList:list,startDate:str,endDate:str,force:bool
                 for index in trange(len(data)):
                     row = data.iloc[index,:]
                     videoId = row['videoId']
-                    comment_df = request_videoComment(key,videoId,channelTitle)
+                    comment_df = request_videoComment(key,videoId,channelTitle,True)
                     log.processLog(f'  [{channelTitle}] 第{index}支影片留言:{videoId} Done')
                 log.processLog('--------------------------------------------------------')
     except:
